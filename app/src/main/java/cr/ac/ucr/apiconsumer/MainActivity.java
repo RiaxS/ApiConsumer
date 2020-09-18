@@ -1,8 +1,10 @@
 package cr.ac.ucr.apiconsumer;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.constraintlayout.widget.ConstraintLayout;
 
 import android.Manifest;
@@ -12,6 +14,8 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.Icon;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -19,6 +23,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -26,9 +32,12 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.Priority;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.request.RequestOptions;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.material.appbar.AppBarLayout;
 
 import org.w3c.dom.Text;
 
+import java.io.IOException;
 import java.nio.file.WatchEvent;
 import java.util.Calendar;
 import java.util.List;
@@ -48,6 +57,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
     private final String TAG = "MainActivity";
     private final int LOCATION_CODE_REQUEST = 1;
+    private final int REQUEST_CODE = 23;
     private TextView tvGreeting;
     private TextView tvDescription;
     private ImageView ivImage;
@@ -69,6 +79,14 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         latitude = 9.97625;
         longitude = -84.83836;
 
+        AppBarLayout ablAppBarLayout = findViewById(R.id.abl_appbar);
+        ablAppBarLayout.setOutlineProvider(null);
+        ablAppBarLayout.setElevation(0);
+
+        Toolbar tToolbar = findViewById(R.id.t_toolbar);
+        tToolbar.setTitle("");
+        setSupportActionBar(tToolbar);
+
         clContainer = findViewById(R.id.cl_container);
 
         tvGreeting = findViewById(R.id.tv_greeting);
@@ -87,6 +105,80 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         setBackgroundGreeting();
 
         //getWeather(latitude, longitude);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main_menu, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        switch (item.getItemId()){
+            case R.id.im_open_search:
+
+                openSearchActivity();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+
+    }
+
+    private void openSearchActivity() {
+        Intent intent = new Intent(this, SearchActivity.class);
+        //intent.putExtra("name", "name");
+        startActivityForResult(intent, REQUEST_CODE);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        try {
+            super.onActivityResult(requestCode, resultCode, data);
+
+            if(requestCode ==  REQUEST_CODE && resultCode == RESULT_OK){
+                String city = data.getStringExtra(SearchActivity.KEY);
+                Log.i(TAG, "city" + city);
+
+                LatLng latlon = getLocalLocationFromAddress(city);
+
+                if(latlon != null){
+                    Log.i(TAG, latlon.latitude +"--"+ latlon.longitude);
+                    getWeather(latlon.latitude,  latlon.longitude);
+                }
+            }
+
+        } catch (Exception e){
+            e.printStackTrace();
+            Log.e(TAG, e.getMessage().toString());
+        }
+
+    }
+
+    private LatLng getLocalLocationFromAddress(String city) {
+
+        Geocoder geocoder = new Geocoder(this);
+        List<Address> address;
+        LatLng latLng = null;
+
+        try {
+            address = geocoder.getFromLocationName(city, 5);
+            if (address == null){
+                return null;
+            }
+
+            Address location = address.get(0);
+            latLng = new LatLng(location.getLatitude(), location.getLongitude());
+        } catch (IOException e){
+
+            Log.e(TAG, "Error" + e.getMessage().toString());
+
+
+        }
+
+
+        return latLng;
     }
 
     @Override

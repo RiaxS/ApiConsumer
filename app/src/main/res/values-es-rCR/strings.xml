@@ -7,5 +7,7 @@
     <string name="night">Buenas Noches</string>
     <string name="minmax">%1$sº | %2$sº</string>
     <string name="temperature">%1$sº</string>
+    <string name="city">city</string>
+    <string name="change">change</string>
 
 </resources>
